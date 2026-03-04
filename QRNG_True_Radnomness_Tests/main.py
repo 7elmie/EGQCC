@@ -3,7 +3,7 @@ import gradio as gr
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import uvicorn
-from nist_tests import run_all_tests
+from nist_tests import run_sp800_90b_assessments
 from vqr_turn import generate_vqr_bits
 
 # -------------------------------
@@ -11,7 +11,7 @@ from vqr_turn import generate_vqr_bits
 # -------------------------------
 def vqr_turn_service(n_bits: int = 1024):
     bits = generate_vqr_bits(n_bits)
-    results = run_all_tests(bits)
+    results = run_sp800_90b_assessments(bits)
     return bits, results
 
 
