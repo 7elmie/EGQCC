@@ -1,4 +1,3 @@
-
 These repo reviews many **True-Radnomness-Tests** related documents from NIST (National Institute of Standards and Technology) and Dieharder describe  **statistical test suites for evaluating the randomness of number generators** . Both sources detail various **tests designed to detect patterns or biases** in binary sequences that would indicate a lack of true randomness. The NIST document,  **Special Publication 800-22** , presents  **15 specific tests** , including the Frequency (Monobit) Test and the Serial Test, along with their mathematical backgrounds and guidelines for interpretation. It also introduces the concepts of  **random number generators (RNGs) and pseudorandom number generators (PRNGs)** , emphasizing their importance in cryptographic applications and the need to minimize Type II errors (falsely accepting a non-random sequence as random). The **Special Publication 800-90B** focuses on **entropy sources** for random bit generation, outlining **health tests and statistical methods for estimating min-entropy** to ensure the quality of these sources. The Dieharder excerpts highlight its role as an  **extended methodology for randomness testing** , building upon earlier test suites like Diehard, and includes examples of good (mt19937) and bad (randu, slatec) generators, emphasizing the use of **p-values and the Kolmogorov-Smirnov test** for evaluating results.
 
 # Random Number Generator (RNG) Testing and Dieharder Suite
@@ -30,6 +29,26 @@ These repo reviews many **True-Radnomness-Tests** related documents from NIST (N
 * **Periodicity:** Older generators often had short periods, leading to repeated sequences in long simulations.
 * **High-Dimensional Correlations:** Many generators produce numbers with subtle patterns only visible in high-dimensional spaces, requiring a large number of samples to detect.
 * **Bit-Level Randomness:** Many generators may have "bad bits" that do not change value, impacting uniformity, especially in least significant bits.
+
+## Useful Links
+
+### NIST-Statistical-Test-Suite
+
+https://csrc.nist.gov/Projects/random-bit-generation/Documentation-and-Software/Guide-to-the-Statistical-Tests
+https://github.com/terrillmoore/NIST-Statistical-Test-Suite
+
+### dieharder-Robert G. Brown
+
+https://webhome.phy.duke.edu/~rgb/General/dieharder.php
+https://github.com/seehuhn/dieharder
+
+### RANDOM.ORG offers true random numbers to anyone on the Internet
+
+https://www.random.org/
+
+### DIY - Build your own TRNG
+
+http://www.reallyreallyrandom.com/index.html
 
 ## 2. Statistical Testing of RNGs: Core Concepts and Methodologies
 
@@ -158,7 +177,6 @@ These repo reviews many **True-Radnomness-Tests** related documents from NIST (N
 * **Visualization of Failures:** Beyond P-values and histograms, visualizing patterns of failure, especially for high-dimensional correlations, can reveal new insights.
 * **Community Contribution:** Dieharder is intended to be a "useable testbed framework for researchers to write, and ultimately contribute, their" own tests. (DieHarder)
 
-
 # Entroby Test Example (ent)
 
 ## Statistical Randomness (what ent tested)
@@ -194,12 +212,6 @@ To call it cryptographically secure, you’d need properties like:
 1- Non-determinism (can’t reconstruct the sequence from a partial output)
 2- Resistance to backtracking (knowing previous outputs doesn’t reveal future ones)
 3- Resistance to prediction (no feasible shortcut better than brute force)
-
-### dieharder-Robert G. Brown
-
-https://webhome.phy.duke.edu/~rgb/General/dieharder.php
-
-https://github.com/seehuhn/dieharder
 
 ### Sample Test Results
 
@@ -250,4 +262,3 @@ dieharder -a -f samples.bin
 | dab_filltree (2 runs)   | 32    | 15000000 | 1        | 0.1545/0.3505 | 🟢 PASSED  |
 | dab_filltree2 (2 runs)  | 0–1  | 5000000  | 1        | 0.6399/0.5067 | 🟢 PASSED  |
 | dab_monobit2            | 12    | 65000000 | 1        | 0.88319991    | 🟢 PASSED  |
-
