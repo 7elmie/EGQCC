@@ -30,7 +30,7 @@ def main():
     try:
         while True:
             # Generate Alice's random key and basis
-            alice_key = generate_key(12)  # Example size of 12
+            alice_key = generate_key(8)  # Example size of 8
             alice_basis = generate_key(len(alice_key))
             alice_circuit = QuantumCircuit(len(alice_key), len(alice_key))
             
