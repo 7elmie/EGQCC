@@ -32,6 +32,11 @@ These repo reviews many **True-Radnomness-Tests** related documents from NIST (N
 
 ## Useful Links
 
+### Entropy Test (ent) 
+
+https://www.fourmilab.ch/random/
+Usage: dd if=/dev/random  count=8192 | ent
+
 ### NIST-Statistical-Test-Suite
 
 https://csrc.nist.gov/Projects/random-bit-generation/Documentation-and-Software/Guide-to-the-Statistical-Tests
@@ -41,6 +46,7 @@ https://github.com/terrillmoore/NIST-Statistical-Test-Suite
 
 https://webhome.phy.duke.edu/~rgb/General/dieharder.php
 https://github.com/seehuhn/dieharder
+Usage: dd if=/dev/random  count=8192 | dieharder -a 
 
 ### RANDOM.ORG offers true random numbers to anyone on the Internet
 
