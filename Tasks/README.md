@@ -59,11 +59,13 @@ Successfully transmit a key while measuring the exact QBER threshold at which Al
 
 ### Research Component:
 
-Study the ISO/IEC 23837 standard for the security evaluation of quantum modules. Identify three different physical sources of quantum entropy (e.g., optical beam splitting vs. vacuum fluctuations).
+Study the ISO/IEC 23837 standard for the security evaluation of quantum modules. Identify three different physical sources of QRNG quantum entropy (e.g., optical beam splitting vs. vacuum fluctuations).
+
+Also check avalible TRNG hardware/phyiscal entroby sources (e.g. is /dev/random on Linux TRNG or PRNG?)
 
 ### Coding Component:
 
-Obtain a sample dataset of random numbers (many public QRNG datasets are available) and write a script to run the NIST SP 800-22 statistical test suite (or others).
+Obtain a sample dataset of random numbers (many public QRNG datasets are available, or dev/random on Linux) and write a script to run the NIST SP 800-22 statistical test suite (or others).
 
 ### Goal:
 
