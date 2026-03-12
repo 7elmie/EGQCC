@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QARS - Quantum-Adjusted Risk Score Framework</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #121a2b;
+            --bg-tertiary: #1a2436;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #2d3748;
+            --glass-bg: rgba(26, 36, 54, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .quantum-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                var(--bg-primary);
+        }
+
+        .quantum-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+            color: var(--accent-cyan);
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: var(--bg-tertiary);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--accent-green);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .toggle.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        /* Sector Profiles */
+        .sector-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .sector-btn {
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .sector-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Visualization Section */
+        .viz-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .gauge-container {
+            position: relative;
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-value {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .gauge-label {
+            position: absolute;
+            top: 75%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        .risk-low {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .risk-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .risk-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .risk-critical {
+            background: rgba(220, 38, 38, 0.3);
+            color: #f87171;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        /* PAREK Workflow */
+        .parek-flow {
+            display: flex;
+            justify-content: space-between;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .parek-step {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            margin: 0 0.5rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .parek-step.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .parek-step.completed {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .parek-step::after {
+            content: '→';
+            position: absolute;
+            right: -1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .parek-step:last-child::after {
+            display: none;
+        }
+
+        .parek-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .parek-title {
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .parek-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Asset Table */
+        .asset-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .asset-table th,
+        .asset-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .asset-table th {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .asset-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .asset-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent-cyan);
+        }
+
+        .icon-btn.delete:hover {
+            color: var(--accent-red);
+        }
+
+        /* Compliance Indicators */
+        .compliance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .compliance-item {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .compliance-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-compliant {
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .status-partial {
+            background: var(--accent-yellow);
+            box-shadow: 0 0 10px var(--accent-yellow);
+        }
+
+        .status-noncompliant {
+            background: var(--accent-red);
+            box-shadow: 0 0 10px var(--accent-red);
+        }
+
+        /* CBOM Section */
+        .cbom-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .alert-box {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--accent-red);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+            display: none;
+        }
+
+        .alert-box.show {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Stats Summary */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .viz-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .panel {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Quantum Forecast Section */
+        .forecast-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .weight-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .weight-input {
+            text-align: center;
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Loading Animation */
+        .quantum-loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-cyan);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="quantum-bg"></div>
+    <canvas class="quantum-particles" id="particleCanvas"></canvas>
+
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">Q</div>
+            <div>
+                <h1>QARS Framework</h1>
+                <small style="color: var(--text-secondary);">Quantum-Adjusted Risk Score</small>
+            </div>
+        </div>
+        <div class="header-controls">
+            <button class="btn btn-secondary" onclick="exportCSV()">
+                <span>📊</span> Export CSV
+            </button>
+            <button class="btn btn-secondary" onclick="exportPDF()">
+                <span>📄</span> Export PDF
+            </button>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <span>+</span> Add Asset
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Left Panel: Inputs -->
+        <div class="input-panel">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>⚛️</span> Asset Configuration
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Asset Name
+                        <span class="tooltip" data-tooltip="Unique identifier for the asset">ℹ️</span>
+                    </label>
+                    <input type="text" id="assetName" placeholder="e.g., Payment Gateway API">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Data Shelf-Life (X)
+                        <span class="tooltip" data-tooltip="Years until data loses value">ℹ️</span>
+                    </label>
+                    <input type="number" id="shelfLife" min="0" max="50" step="0.5" value="5">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Migration Timeline (Y)
+                        <span class="tooltip" data-tooltip="Years to complete PQC migration">ℹ️</span>
+                    </label>
+                    <input type="number" id="migrationTime" min="0" max="50" step="0.5" value="3">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Threat Horizon (Z)
+                        <span class="tooltip" data-tooltip="Expected years until CRQC threat">ℹ️</span>
+                    </label>
+                    <input type="number" id="threatHorizon" min="0.1" max="50" step="0.5" value="10">
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🎯</span> Risk Classification
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Sensitivity Level</label>
+                    <select id="sensitivity">
+                        <option value="0.1">Low (Public Data)</option>
+                        <option value="0.5" selected>Medium (Internal Data)</option>
+                        <option value="0.8">High (Confidential)</option>
+                        <option value="1.0">Critical (State Secrets)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Cryptographic Visibility (v)
+                        <span class="tooltip" data-tooltip="Toggle if asset is PQC protected">ℹ️</span>
+                    </label>
+                    <div class="toggle-container">
+                        <span>Non-PQC</span>
+                        <div class="toggle active" id="cryptoToggle" onclick="toggleCrypto()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                        <span>PQC Protected</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Harvestability Factor (q)
+                        <span class="tooltip" data-tooltip="Likelihood of data being harvested (0-1)">ℹ️</span>
+                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="harvestability" min="0" max="1" step="0.01" value="0.5"
+                            oninput="updateSliderValue(this)">
+                        <span class="slider-value" id="harvestValue">0.50</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>⚖️</span> Sector Profile
+                    </div>
+                </div>
+
+                <div class="sector-grid">
+                    <button class="sector-btn active" onclick="setSector('finance')">Finance</button>
+                    <button class="sector-btn" onclick="setSector('iot')">IoT/Embedded</button>
+                    <button class="sector-btn" onclick="setSector('cloud')">Cloud Services</button>
+                    <button class="sector-btn" onclick="setSector('baseline')">General</button>
+                </div>
+
+                <div class="weight-inputs">
+                    <div class="weight-input">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary);">wT</label>
+                        <input type="number" id="weightT" min="0" max="1" step="0.01" value="0.4"
+                            style="margin-top: 0.25rem;">
+                    </div>
+                    <div class="weight-input">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary);">wS</label>
+                        <input type="number" id="weightS" min="0" max="1" step="0.01" value="0.4"
+                            style="margin-top: 0.25rem;">
+                    </div>
+                    <div class="weight-input">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary);">wE</label>
+                        <input type="number" id="weightE" min="0" max="1" step="0.01" value="0.2"
+                            style="margin-top: 0.25rem;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🔮</span> Quantum Forecast
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expected CRQC Arrival (Years)</label>
+                    <input type="number" id="crqcTimeline" min="1" max="50" value="15">
+                </div>
+                <div class="forecast-container">
+                    <small style="color: var(--accent-purple);">
+                        📈 Risk trajectory projection enabled. Monitor Mosca inequality: X + Y < Z </small>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" onclick="calculateAndAdd()">
+                Calculate & Add to Dashboard
+            </button>
+        </div>
+
+        <!-- Right Panel: Visualization -->
+        <div class="viz-panel">
+            <!-- Stats Summary -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalAssets">0</div>
+                    <div class="stat-label">Total Assets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRisk">0.00</div>
+                    <div class="stat-label">Avg Risk Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="criticalCount">0</div>
+                    <div class="stat-label">Critical Assets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="moscaViolations">0</div>
+                    <div class="stat-label">Mosca Violations</div>
+                </div>
+            </div>
+
+            <!-- PAREK Workflow -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🔄</span> PAREK Framework Workflow
+                    </div>
+                </div>
+                <div class="parek-flow">
+                    <div class="parek-step active" id="step-inventory">
+                        <div class="parek-icon">📋</div>
+                        <div class="parek-title">Post-Quantum Inventory</div>
+                        <div class="parek-status">Asset Registration</div>
+                    </div>
+                    <div class="parek-step" id="step-assessment">
+                        <div class="parek-icon">🔍</div>
+                        <div class="parek-title">Assessment</div>
+                        <div class="parek-status">QARS Scoring</div>
+                    </div>
+                    <div class="parek-step" id="step-roadmap">
+                        <div class="parek-icon">🗺️</div>
+                        <div class="parek-title">Roadmapping</div>
+                        <div class="parek-status">Priority Queue</div>
+                    </div>
+                    <div class="parek-step" id="step-execution">
+                        <div class="parek-icon">⚡</div>
+                        <div class="parek-title">Execution</div>
+                        <div class="parek-status">Migration Tracking</div>
+                    </div>
+                    <div class="parek-step" id="step-governance">
+                        <div class="parek-icon">🏛️</div>
+                        <div class="parek-title">Governance</div>
+                        <div class="parek-status">CBOM Compliance</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="viz-grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>🎚️</span> QARS Risk Gauge
+                        </div>
+                    </div>
+                    <div class="gauge-container">
+                        <canvas id="gaugeChart"></canvas>
+                        <div class="gauge-value" id="qarsValue">0.00</div>
+                        <div class="gauge-label">Quantum Risk Score</div>
+                        <div class="risk-badge risk-low" id="riskBadge">Low Risk</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>📊</span> Factor Breakdown
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CBOM & Compliance -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🔐</span> Cryptographic Bill of Materials (CBOM)
+                    </div>
+                </div>
+                <div class="cbom-fields">
+                    <div class="form-group">
+                        <label class="form-label">Algorithm Type</label>
+                        <select id="algorithmType">
+                            <option>RSA-2048</option>
+                            <option>RSA-4096</option>
+                            <option>ECC P-256</option>
+                            <option>ECC P-384</option>
+                            <option>AES-256</option>
+                            <option>ML-KEM (Kyber)</option>
+                            <option>ML-DSA (Dilithium)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Key Size (bits)</label>
+                        <input type="number" id="keySize" value="2048">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Certificate Expiry</label>
+                        <input type="date" id="certExpiry">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Protocol Usage</label>
+                        <select id="protocol">
+                            <option>TLS 1.2</option>
+                            <option>TLS 1.3</option>
+                            <option>IPsec</option>
+                            <option>SSH</option>
+                            <option>VPN</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert-box" id="cryptoAlert">
+                    <strong>⚠️ Cryptographic Alert:</strong> <span id="alertText">Weak cryptography detected or
+                        certificate expiring soon.</span>
+                </div>
+
+                <div class="panel-header" style="margin-top: 1.5rem;">
+                    <div class="panel-title">
+                        <span>✅</span> Regulatory Compliance
+                    </div>
+                </div>
+                <div class="compliance-grid">
+                    <div class="compliance-item">
+                        <div class="compliance-status status-noncompliant" id="doraStatus"></div>
+                        <div style="font-weight: bold; margin: 0.5rem 0;">DORA</div>
+                        <small style="color: var(--text-secondary);">Digital Operational Resilience Act</small>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-status status-partial" id="nis2Status"></div>
+                        <div style="font-weight: bold; margin: 0.5rem 0;">NIS2</div>
+                        <small style="color: var(--text-secondary);">Network & Information Security</small>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-status status-noncompliant" id="nistStatus"></div>
+                        <div style="font-weight: bold; margin: 0.5rem 0;">NSM-10/NIST</div>
+                        <small style="color: var(--text-secondary);">PQC Standards</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset Dashboard -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>💼</span> Asset Risk Dashboard
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                            onclick="clearAllAssets()">
+                            Clear All
+                        </button>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                            onclick="populateSampleData()">
+                            Reset Demo Data
+                        </button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="asset-table">
+                        <thead>
+                            <tr>
+                                <th>Asset Name</th>
+                                <th>QARS Score</th>
+                                <th>Risk Level</th>
+                                <th>Timeline (T)</th>
+                                <th>Sensitivity (S)</th>
+                                <th>Exposure (E)</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTableBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal" id="assetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Asset</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- Dynamic form content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let assets = [];
+        let currentEditId = null;
+        let gaugeChart, breakdownChart;
+
+        const sectorProfiles = {
+            finance: { wT: 0.4, wS: 0.4, wE: 0.2 },
+            iot: { wT: 0.5, wS: 0.2, wE: 0.3 },
+            cloud: { wT: 0.3, wS: 0.2, wE: 0.5 },
+            baseline: { wT: 0.33, wS: 0.33, wE: 0.34 }
+        };
+
+        // Sample Data Population
+        const sampleAssets = [
+            { name: "Core Banking System", X: 10, Y: 5, Z: 8, S: 1.0, v: 1, q: 0.9, status: "In Progress", sector: "finance" },
+            { name: "Payment Gateway API", X: 3, Y: 2, Z: 10, S: 0.8, v: 1, q: 0.95, status: "Planned", sector: "finance" },
+            { name: "Customer Database", X: 7, Y: 4, Z: 12, S: 0.8, v: 1, q: 0.7, status: "In Progress", sector: "finance" },
+            { name: "Mobile Banking App", X: 2, Y: 1.5, Z: 10, S: 0.8, v: 0, q: 0.6, status: "Migrated", sector: "finance" },
+            { name: "ATM Network", X: 15, Y: 8, Z: 8, S: 0.5, v: 1, q: 0.4, status: "Planned", sector: "finance" },
+            { name: "IoT Sensor Grid", X: 1, Y: 3, Z: 6, S: 0.5, v: 1, q: 0.3, status: "Planned", sector: "iot" },
+            { name: "Smart Meter Infrastructure", X: 20, Y: 10, Z: 8, S: 0.5, v: 1, q: 0.8, status: "In Progress", sector: "iot" },
+            { name: "Industrial Control System", X: 25, Y: 12, Z: 7, S: 0.8, v: 1, q: 0.6, status: "Planned", sector: "iot" },
+            { name: "Connected Vehicle Fleet", X: 3, Y: 5, Z: 9, S: 0.5, v: 0, q: 0.5, status: "Secured", sector: "iot" },
+            { name: "Medical Device Network", X: 30, Y: 15, Z: 8, S: 1.0, v: 1, q: 0.4, status: "Planned", sector: "iot" },
+            { name: "Cloud Data Warehouse", X: 5, Y: 3, Z: 11, S: 0.8, v: 1, q: 0.85, status: "In Progress", sector: "cloud" },
+            { name: "Kubernetes Cluster", X: 2, Y: 1, Z: 10, S: 0.5, v: 0, q: 0.7, status: "Secured", sector: "cloud" },
+            { name: "Serverless Functions", X: 1, Y: 0.5, Z: 12, S: 0.5, v: 0, q: 0.3, status: "Migrated", sector: "cloud" },
+            { name: "Object Storage Service", X: 10, Y: 4, Z: 11, S: 0.5, v: 1, q: 0.9, status: "Planned", sector: "cloud" },
+            { name: "Identity Provider", X: 15, Y: 6, Z: 9, S: 1.0, v: 1, q: 0.95, status: "In Progress", sector: "cloud" },
+            { name: "Email Infrastructure", X: 3, Y: 2, Z: 10, S: 0.5, v: 1, q: 0.6, status: "Planned", sector: "baseline" },
+            { name: "HR Management System", X: 7, Y: 5, Z: 12, S: 0.8, v: 1, q: 0.5, status: "Planned", sector: "baseline" },
+            { name: "Document Repository", X: 10, Y: 7, Z: 11, S: 0.5, v: 1, q: 0.4, status: "Planned", sector: "baseline" }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            initCharts();
+            initParticles();
+            populateSampleData();
+
+            // Add input listeners for real-time calculation
+            ['shelfLife', 'migrationTime', 'threatHorizon', 'sensitivity', 'harvestability', 'weightT', 'weightS', 'weightE'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateCalculations);
+            });
+
+            // Set default date
+            const future = new Date();
+            future.setFullYear(future.getFullYear() + 1);
+            document.getElementById('certExpiry').value = future.toISOString().split('T')[0];
+        });
+
+        function populateSampleData() {
+            assets = [];
+            sampleAssets.forEach((data, index) => {
+                // Calculate QARS for this asset
+                const r = (data.X + data.Y) / data.Z;
+                const k = 3;
+                let T = 1 / (1 + Math.exp(-k * (r - 1)));
+                T = Math.max(0, Math.min(1, T));
+
+                const E = data.v * data.q;
+
+                // Use sector weights
+                const weights = sectorProfiles[data.sector];
+                const totalW = weights.wT + weights.wS + weights.wE;
+                const QARS = ((weights.wT / totalW) * T) + ((weights.wS / totalW) * data.S) + ((weights.wE / totalW) * E);
+
+                assets.push({
+                    id: Date.now() + index,
+                    name: data.name,
+                    qars: QARS,
+                    T: T,
+                    S: data.S,
+                    E: E,
+                    sensitivity: getSensitivityLabel(data.S),
+                    status: data.status,
+                    timestamp: new Date().toISOString(),
+                    X: data.X,
+                    Y: data.Y,
+                    Z: data.Z,
+                    moscaSafe: (data.X + data.Y) < data.Z
+                });
+            });
+
+            renderAssetTable();
+            updateStats();
+            showNotification('Demo data loaded: 18 assets populated');
+        }
+
+        function getSensitivityLabel(value) {
+            if (value === 1.0) return "Critical";
+            if (value === 0.8) return "High";
+            if (value === 0.5) return "Medium";
+            return "Low";
+        }
+
+        function clearAllAssets() {
+            if (confirm('Are you sure you want to clear all assets?')) {
+                assets = [];
+                renderAssetTable();
+                updateStats();
+            }
+        }
+
+        // Particle Background Animation
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    size: Math.random() * 2
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.5)';
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // Chart Initialization
+        function initCharts() {
+            // Gauge Chart
+            const gaugeCtx = document.getElementById('gaugeChart').getContext('2d');
+            gaugeChart = new Chart(gaugeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risk', 'Safe'],
+                    datasets: [{
+                        data: [0, 1],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(30, 41, 59, 0.3)'
+                        ],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            // Breakdown Chart
+            const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+            breakdownChart = new Chart(breakdownCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Timeline (T)', 'Sensitivity (S)', 'Exposure (E)'],
+                    datasets: [{
+                        label: 'Risk Factor',
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            'rgba(0, 212, 255, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(245, 158, 11, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 212, 255, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(245, 158, 11, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Core Calculations
+        function calculateQARS() {
+            const X = parseFloat(document.getElementById('shelfLife').value) || 0;
+            const Y = parseFloat(document.getElementById('migrationTime').value) || 0;
+            const Z = parseFloat(document.getElementById('threatHorizon').value) || 1;
+            const k = 3;
+
+            // Mosca Ratio
+            const r = (X + Y) / Z;
+
+            // Timeline Risk (T) - Logistic scaling
+            let T = 1 / (1 + Math.exp(-k * (r - 1)));
+            T = Math.max(0, Math.min(1, T));
+
+            // Sensitivity Risk (S)
+            const S = parseFloat(document.getElementById('sensitivity').value);
+
+            // Exposure Risk (E)
+            const v = document.getElementById('cryptoToggle').classList.contains('active') ? 0 : 1;
+            const q = parseFloat(document.getElementById('harvestability').value);
+            const E = v * q;
+
+            // Weights
+            const wT = parseFloat(document.getElementById('weightT').value);
+            const wS = parseFloat(document.getElementById('weightS').value);
+            const wE = parseFloat(document.getElementById('weightE').value);
+
+            // Normalize weights
+            const totalW = wT + wS + wE;
+            const nwT = wT / totalW;
+            const nwS = wS / totalW;
+            const nwE = wE / totalW;
+
+            // Final QARS
+            const QARS = (nwT * T) + (nwS * S) + (nwE * E);
+
+            return { QARS, T, S, E, r, moscaSafe: (X + Y) < Z };
+        }
+
+        function updateCalculations() {
+            const result = calculateQARS();
+
+            // Update Gauge
+            document.getElementById('qarsValue').textContent = result.QARS.toFixed(2);
+            gaugeChart.data.datasets[0].data = [result.QARS, 1 - result.QARS];
+
+            // Color based on risk
+            let color = '#10b981';
+            let badgeClass = 'risk-low';
+            let badgeText = 'Low Risk';
+
+            if (result.QARS > 0.85) {
+                color = '#ef4444';
+                badgeClass = 'risk-critical';
+                badgeText = 'Critical Risk';
+            } else if (result.QARS > 0.6) {
+                color = '#ef4444';
+                badgeClass = 'risk-high';
+                badgeText = 'High Risk';
+            } else if (result.QARS > 0.3) {
+                color = '#f59e0b';
+                badgeClass = 'risk-medium';
+                badgeText = 'Medium Risk';
+            }
+
+            gaugeChart.data.datasets[0].backgroundColor[0] = color;
+            gaugeChart.update();
+
+            const badge = document.getElementById('riskBadge');
+            badge.className = `risk-badge ${badgeClass}`;
+            badge.textContent = badgeText;
+
+            // Update Breakdown Chart
+            breakdownChart.data.datasets[0].data = [result.T, result.S, result.E];
+            breakdownChart.update();
+
+            // Update PAREK steps based on inputs
+            updatePAREKWorkflow(result);
+
+            // Check CBOM alerts
+            checkCryptoAlerts();
+
+            // Update compliance status
+            updateCompliance(result.QARS);
+        }
+
+        function updatePAREKWorkflow(result) {
+            const steps = ['inventory', 'assessment', 'roadmap', 'execution', 'governance'];
+            const assetName = document.getElementById('assetName').value;
+
+            // Reset all steps
+            steps.forEach(step => {
+                document.getElementById(`step-${step}`).classList.remove('active', 'completed');
+            });
+
+            // Logic for step activation
+            document.getElementById('step-inventory').classList.add('active');
+
+            if (assetName && result.QARS > 0) {
+                document.getElementById('step-inventory').classList.add('completed');
+                document.getElementById('step-assessment').classList.add('active');
+            }
+
+            if (result.QARS > 0.6) {
+                document.getElementById('step-assessment').classList.add('completed');
+                document.getElementById('step-roadmap').classList.add('active');
+            }
+
+            if (result.QARS > 0.85) {
+                document.getElementById('step-roadmap').classList.add('completed');
+                document.getElementById('step-execution').classList.add('active');
+            }
+        }
+
+        function checkCryptoAlerts() {
+            const algo = document.getElementById('algorithmType').value;
+            const expiry = new Date(document.getElementById('certExpiry').value);
+            const now = new Date();
+            const daysUntilExpiry = (expiry - now) / (1000 * 60 * 60 * 24);
+
+            const alertBox = document.getElementById('cryptoAlert');
+            const alertText = document.getElementById('alertText');
+
+            let alerts = [];
+
+            if (algo.includes('RSA') || algo.includes('ECC')) {
+                alerts.push('Classical algorithm vulnerable to quantum attacks');
+            }
+
+            if (daysUntilExpiry < 90) {
+                alerts.push(`Certificate expires in ${Math.floor(daysUntilExpiry)} days`);
+            }
+
+            if (alerts.length > 0) {
+                alertText.textContent = alerts.join('. ');
+                alertBox.classList.add('show');
+            } else {
+                alertBox.classList.remove('show');
+            }
+        }
+
+        function updateCompliance(qars) {
+            const statuses = ['dora', 'nis2', 'nist'];
+            statuses.forEach(status => {
+                const el = document.getElementById(`${status}Status`);
+                el.className = 'compliance-status';
+
+                if (qars < 0.3) {
+                    el.classList.add('status-compliant');
+                } else if (qars < 0.6) {
+                    el.classList.add('status-partial');
+                } else {
+                    el.classList.add('status-noncompliant');
+                }
+            });
+        }
+
+        // UI Interactions
+        function toggleCrypto() {
+            const toggle = document.getElementById('cryptoToggle');
+            toggle.classList.toggle('active');
+            updateCalculations();
+        }
+
+        function updateSliderValue(slider) {
+            document.getElementById('harvestValue').textContent = parseFloat(slider.value).toFixed(2);
+            updateCalculations();
+        }
+
+        function setSector(sector) {
+            // Update UI
+            document.querySelectorAll('.sector-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update weights
+            const profile = sectorProfiles[sector];
+            document.getElementById('weightT').value = profile.wT;
+            document.getElementById('weightS').value = profile.wS;
+            document.getElementById('weightE').value = profile.wE;
+
+            updateCalculations();
+        }
+
+        function calculateAndAdd() {
+            const result = calculateQARS();
+            const asset = {
+                id: Date.now(),
+                name: document.getElementById('assetName').value || `Asset-${assets.length + 1}`,
+                qars: result.QARS,
+                T: result.T,
+                S: result.S,
+                E: result.E,
+                sensitivity: document.getElementById('sensitivity').selectedOptions[0].text.split(' ')[0],
+                status: 'Planned',
+                timestamp: new Date().toISOString(),
+                moscaSafe: result.moscaSafe
+            };
+
+            assets.push(asset);
+            renderAssetTable();
+            updateStats();
+
+            // Reset form partially
+            document.getElementById('assetName').value = '';
+
+            // Visual feedback
+            showNotification('Asset added to dashboard');
+        }
+
+        function updateStats() {
+            document.getElementById('totalAssets').textContent = assets.length;
+
+            if (assets.length > 0) {
+                const avgRisk = assets.reduce((sum, a) => sum + a.qars, 0) / assets.length;
+                document.getElementById('avgRisk').textContent = avgRisk.toFixed(2);
+
+                const criticalCount = assets.filter(a => a.qars > 0.85).length;
+                document.getElementById('criticalCount').textContent = criticalCount;
+
+                const moscaViolations = assets.filter(a => !a.moscaSafe).length;
+                document.getElementById('moscaViolations').textContent = moscaViolations;
+            } else {
+                document.getElementById('avgRisk').textContent = '0.00';
+                document.getElementById('criticalCount').textContent = '0';
+                document.getElementById('moscaViolations').textContent = '0';
+            }
+        }
+
+        function renderAssetTable() {
+            const tbody = document.getElementById('assetTableBody');
+            tbody.innerHTML = '';
+
+            // Sort by QARS descending
+            const sortedAssets = [...assets].sort((a, b) => b.qars - a.qars);
+
+            sortedAssets.forEach(asset => {
+                const row = document.createElement('tr');
+
+                let riskClass = 'risk-low';
+                if (asset.qars > 0.85) riskClass = 'risk-critical';
+                else if (asset.qars > 0.6) riskClass = 'risk-high';
+                else if (asset.qars > 0.3) riskClass = 'risk-medium';
+
+                const moscaIndicator = asset.moscaSafe ?
+                    '<span style="color: var(--accent-green);">✓</span>' :
+                    '<span style="color: var(--accent-red);" title="Mosca Inequality Violation">⚠️</span>';
+
+                row.innerHTML = `
+                    <td><strong>${asset.name}</strong> ${moscaIndicator}</td>
+                    <td><span style="color: var(--accent-cyan); font-weight: bold;">${asset.qars.toFixed(3)}</span></td>
+                    <td><span class="risk-badge ${riskClass}">${getRiskLabel(asset.qars)}</span></td>
+                    <td>${asset.T.toFixed(3)}</td>
+                    <td>${asset.S.toFixed(1)}</td>
+                    <td>${asset.E.toFixed(3)}</td>
+                    <td>
+                        <select onchange="updateAssetStatus(${asset.id}, this.value)" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 0.25rem; border-radius: 4px;">
+                            <option value="Planned" ${asset.status === 'Planned' ? 'selected' : ''}>Planned</option>
+                            <option value="In Progress" ${asset.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="Migrated" ${asset.status === 'Migrated' ? 'selected' : ''}>Migrated</option>
+                            <option value="Secured" ${asset.status === 'Secured' ? 'selected' : ''}>Secured</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="asset-actions">
+                            <button class="icon-btn" onclick="editAsset(${asset.id})" title="Edit">✏️</button>
+                            <button class="icon-btn delete" onclick="deleteAsset(${asset.id})" title="Delete">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateStats();
+        }
+
+        function getRiskLabel(score) {
+            if (score > 0.85) return 'Critical';
+            if (score > 0.6) return 'High';
+            if (score > 0.3) return 'Medium';
+            return 'Low';
+        }
+
+        function updateAssetStatus(id, status) {
+            const asset = assets.find(a => a.id === id);
+            if (asset) {
+                asset.status = status;
+                renderAssetTable();
+            }
+        }
+
+        function deleteAsset(id) {
+            if (confirm('Are you sure you want to delete this asset?')) {
+                assets = assets.filter(a => a.id !== id);
+                renderAssetTable();
+            }
+        }
+
+        function editAsset(id) {
+            const asset = assets.find(a => a.id === id);
+            if (!asset) return;
+
+            currentEditId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Asset';
+            document.getElementById('assetName').value = asset.name;
+
+            // Find and set sensitivity
+            const sensSelect = document.getElementById('sensitivity');
+            for (let i = 0; i < sensSelect.options.length; i++) {
+                if (parseFloat(sensSelect.options[i].value) === asset.S) {
+                    sensSelect.selectedIndex = i;
+                    break;
+                }
+            }
+
+            closeModal();
+            updateCalculations();
+        }
+
+        // Export Functions
+        function exportCSV() {
+            if (assets.length === 0) {
+                alert('No assets to export');
+                return;
+            }
+
+            let csv = 'Asset Name,QARS Score,Risk Level,Timeline Risk,Sensitivity,Exposure,Status,Mosca Safe,Timestamp\n';
+            assets.forEach(asset => {
+                csv += `${asset.name},${asset.qars.toFixed(4)},${getRiskLabel(asset.qars)},${asset.T.toFixed(4)},${asset.S},${asset.E.toFixed(4)},${asset.status},${asset.moscaSafe},${asset.timestamp}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `QARS_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(20);
+            doc.text('QARS Risk Assessment Report', 20, 20);
+
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+            doc.text(`Total Assets: ${assets.length}`, 20, 40);
+            doc.text(`Average Risk: ${(assets.reduce((s, a) => s + a.qars, 0) / assets.length).toFixed(3)}`, 20, 50);
+
+            let y = 70;
+            doc.setFontSize(10);
+            assets.sort((a, b) => b.qars - a.qars).forEach((asset, idx) => {
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+                const riskLabel = getRiskLabel(asset.qars);
+                doc.text(`${idx + 1}. ${asset.name} - ${asset.qars.toFixed(3)} [${riskLabel}] - ${asset.status}`, 20, y);
+                y += 10;
+            });
+
+            doc.save(`QARS_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Modal Functions
+        function openAddModal() {
+            document.getElementById('assetModal').classList.add('active');
+            document.getElementById('modalTitle').textContent = 'Asset Details';
+            document.getElementById('modalBody').innerHTML = `
+                <p>Use the main form to configure asset parameters. Click "Calculate & Add to Dashboard" to add assets.</p>
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 6px;">
+                    <h4 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">Intelligence Tips:</h4>
+                    <ul style="margin-left: 1rem; color: var(--text-secondary);">
+                        <li><strong>Mosca Inequality:</strong> Ensure X + Y < Z to maintain quantum safety margin</li>
+                        <li><strong>Harvest Now, Decrypt Later:</strong> High exposure (E) indicates immediate threat</li>
+                        <li><strong>PQC Migration:</strong> Critical assets should be prioritized for migration</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('assetModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: var(--accent-green);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // Close modal on outside click
+        window.onclick = function (event) {
+            const modal = document.getElementById('assetModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+
+</html>
