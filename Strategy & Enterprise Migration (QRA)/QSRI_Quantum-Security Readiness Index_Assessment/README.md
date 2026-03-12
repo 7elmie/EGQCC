@@ -48,18 +48,13 @@ The QSRI evaluates eight critical dimensions weighted by strategic importance:
 
 ## Quick Start
 
-### Local Development
+**Open in browser**
+   Simply open `QSRI_Quantum-Security Readiness Index_Assessment.html` in any modern web browser. 
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/SAMeh-ZAGhloul/Quantum-Security-Readiness-Index.git
-   cd Quantum-Security-Readiness-Index
-   ```
+**Open with EXCEL**
+   Or, simply open `QSRI_Quantum-Security Readiness Index_Assessment.xlsx` in any modern web browser. 
 
-2. **Open in browser**
-   Simply open `qsri-assessment.html` in any modern web browser. No build process required!
-
-3. **Start assessing**
+**Start assessing**
    - Review the current maturity levels (pre-populated with example data)
    - Adjust maturity levels using the dropdown selectors
    - Watch scores update in real-time
