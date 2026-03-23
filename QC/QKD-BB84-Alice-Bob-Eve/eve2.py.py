@@ -1,3 +1,6 @@
+
+# Eve - run 2nd
+
 import socket
 import random
 from qiskit import QuantumCircuit, transpile
@@ -33,20 +36,18 @@ def measure_circuit(circuit, basis):
     measurement = [int(outcome[i]) for i in range(len(basis))]
     return measurement
 
-def qkd_protocol(alice_key, bob_basis):
-    alice_circuit = encode_key(alice_key)
-    bob_circuit = alice_circuit.copy()
+# Modified qkd_protocol function
+def qkd_protocol(alice_measurement, alice_basis, bob_measurement):
+    # In a proper QKD, Alice would announce her basis and Bob would announce his basis.
+    # If bases match, they would expect their bits to be the same.
+    # Here, `bob_measurement` is being used as a proxy for Bob's announced basis for comparison.
+    # Ideally, `bob_basis` (Bob's chosen measurement bases) should be passed here separately.
 
-    bob_measurement = measure_circuit(bob_circuit, bob_basis)
-
-    # Bob publicly announces his basis
-    public_basis = bob_basis
-
-    # Alice and Bob discard the bits where their bases don't match
     shared_key = []
-    for i in range(len(alice_key)):
-        if public_basis[i] == bob_basis[i]:
-            shared_key.append(bob_measurement[i])
+    # Alice and Bob discard the bits where their bases don't match
+    for i in range(len(alice_measurement)):
+        if alice_basis[i] == bob_measurement[i]: # Compare Alice's basis with Bob's measurement (proxy for Bob's basis)
+            shared_key.append(alice_measurement[i]) # Keep Alice's bit if bases match (ideally Alice's bit == Bob's bit)
 
     return shared_key
 
@@ -72,6 +73,7 @@ def main():
 
     # Setup server socket to receive connections
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Added to allow port reuse
     server_socket.bind(('localhost', 65434))  # Port for Eve
     server_socket.listen(1)
     print("Eve is listening for connections...")
@@ -92,7 +94,7 @@ def main():
                 alice_data = alice_conn.recv(1024).decode()
                 if not alice_data:
                     raise ValueError("No data received from Alice.")
-                
+
                 print(f"Eve received Alice's data: {alice_data}")
 
                 # Forward Alice's data to Bob
@@ -103,7 +105,7 @@ def main():
                 bob_response = bob_socket.recv(1024).decode()
                 if not bob_response:
                     raise ValueError("No response received from Bob.")
-                
+
                 print(f"Eve received Bob's response: {bob_response}")
 
                 # Send Bob's response back to Alice
@@ -111,12 +113,18 @@ def main():
                 print(f"Response sent to Alice: {bob_response}")
 
                 # Track success rate
-                alice_key, _ = list(map(int, alice_data.split('|')[0].strip('[]').split(','))), len(alice_data.split('|')[1].strip('[]').split(','))
+                alice_key = list(map(int, alice_data.split('|')[0].strip('[]').split(',')))
+                alice_basis = list(map(int, alice_data.split('|')[1].strip('[]').split(',')))
                 bob_measurement = list(map(int, bob_response.strip('[]').split(',')))
-                shared_key = qkd_protocol(alice_key, bob_measurement)
+                shared_key = qkd_protocol(alice_key, alice_basis, bob_measurement)
 
-                eve_guess = eve_intercept(alice_key, bob_measurement)
-                
+                # Eve's attempt to intercept (simplified for demonstration)
+                # In a real scenario, Eve would measure the qubits she intercepts.
+                # Here, we simulate Eve trying to guess the shared key based on what she 'sees' being exchanged.
+                # A better simulation would involve Eve's own measurement process affecting the quantum states.
+
+                eve_guess = eve_intercept(alice_key, bob_measurement) # Using bob_measurement as a proxy for Eve's basis choice for comparison
+
                 if shared_key == eve_guess:
                     eve += 1
 
@@ -139,4 +147,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
